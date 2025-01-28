@@ -1,0 +1,47 @@
+# Python virtual environment
+venv
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Node dependencies
+node_modules/
+.npm
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Project specific
+backend/src/logs/
+backend/src/static/
+backend/src/data/
+*.log
+*.csv
+*.h5
+*.pkl
+
+# Build files
+frontend/dist/
+frontend/build/
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
