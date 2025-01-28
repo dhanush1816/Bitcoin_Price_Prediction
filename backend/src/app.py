@@ -12,40 +12,32 @@ import logging
 import os
 from flask import Flask, jsonify, send_file, request
 from flask_cors import CORS
+from pathlib import Path
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 class BTCPredictionPipeline:
-    def __init__(self, 
-                 lstm_model_path=r'C:/Users/KGRCET/Downloads/project/lstm_model.h5',
-                 rf_model_path=r'C:/Users/KGRCET/Downloads/project/my_combined_model.pkl',
-                 scaler_path=r'C:/Users/KGRCET/Downloads/project/my_scaler.pkl',
-                 data_path=r'C:/Users/KGRCET/Downloads/project/data/btc_data.csv',
-                 look_back=500):
-        """
-        Initialize the prediction pipeline with model paths and parameters
-        """
-        self.look_back = look_back
-        self.data_path = data_path
-        self.data_dir = os.path.dirname(data_path)
-        
-        # Get the current directory
-        self.base_dir = os.path.dirname(os.path.abspath(__file__))
-        
-        # Create absolute paths for directories
-        self.logs_dir = os.path.join(self.base_dir, 'logs')
-        self.models_dir = os.path.join(self.base_dir, 'models')
-        self.static_dir = os.path.join(self.base_dir, 'static')
-        
-        # Create necessary directories
-        os.makedirs(self.logs_dir, exist_ok=True)
-        os.makedirs(self.models_dir, exist_ok=True)
-        os.makedirs(self.data_dir, exist_ok=True)
-        os.makedirs(self.static_dir, exist_ok=True)
+    def __init__(self):
+        """Initialize the prediction pipeline with model paths and parameters"""
+        self.base_dir = Path(__file__).parent
+        self.models_dir = self.base_dir / 'models'
+        self.data_dir = self.base_dir / 'data'
+        self.static_dir = self.base_dir / 'static'
+        self.logs_dir = self.base_dir / 'logs'
+
+        # Create directories
+        for dir_path in [self.models_dir, self.data_dir, self.static_dir, self.logs_dir]:
+            dir_path.mkdir(parents=True, exist_ok=True)
+
+        # Model paths
+        self.lstm_model_path = self.models_dir / 'lstm_model.h5'
+        self.rf_model_path = self.models_dir / 'combined_model.pkl'
+        self.scaler_path = self.models_dir / 'scaler.pkl'
+        self.data_path = self.data_dir / 'btc_data.csv'
         
         # Setup logging with absolute path
-        log_file = os.path.join(self.logs_dir, 'btc_prediction.log')
+        log_file = self.logs_dir / 'btc_prediction.log'
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - %(levelname)s - %(message)s',
@@ -57,8 +49,8 @@ class BTCPredictionPipeline:
         
         # Load models and scaler
         try:
-            self.rf_model = joblib.load(rf_model_path)
-            self.scaler = joblib.load(scaler_path)
+            self.rf_model = joblib.load(self.rf_model_path)
+            self.scaler = joblib.load(self.scaler_path)
             logging.info("Models and scaler loaded successfully")
         except Exception as e:
             logging.error(f"Error loading models: {str(e)}")
@@ -166,9 +158,9 @@ class BTCPredictionPipeline:
             
             # Prepare RF features with correct size
             X_rf, Y_rf = [], []
-            for i in range(len(scaled_data) - self.look_back):  # Removed the -1
-                X_rf.append(scaled_data[i:(i + self.look_back), 0])
-                Y_rf.append(scaled_data[i + self.look_back - 1, 0])  # Adjusted index
+            for i in range(len(scaled_data) - 500):  # Removed the -1
+                X_rf.append(scaled_data[i:(i + 500), 0])
+                Y_rf.append(scaled_data[i + 500 - 1, 0])  # Adjusted index
             
             X_rf, Y_rf = np.array(X_rf), np.array(Y_rf)
             X_rf = X_rf.reshape(X_rf.shape[0], -1)
@@ -226,10 +218,7 @@ class BTCPredictionPipeline:
         })
         
         # Save to CSV with absolute path
-        predictions_file = os.path.join(
-            self.data_dir, 
-            f'predictions_{datetime.now().strftime("%Y%m%d")}.csv'
-        )
+        predictions_file = self.data_dir / f'predictions_{datetime.now().strftime("%Y%m%d")}.csv'
         pred_df.to_csv(predictions_file)
         logging.info(f"Predictions saved to {predictions_file}")
         
@@ -247,10 +236,7 @@ class BTCPredictionPipeline:
         plt.legend()
         
         # Save to static folder with absolute path
-        plot_file = os.path.join(
-            self.static_dir,
-            f'predictions_plot_{datetime.now().strftime("%Y%m%d")}.png'
-        )
+        plot_file = self.static_dir / f'predictions_plot_{datetime.now().strftime("%Y%m%d")}.png'
         plt.savefig(plot_file)
         plt.close()
         
@@ -336,4 +322,5 @@ def get_plot(filename):
         }), 404
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)

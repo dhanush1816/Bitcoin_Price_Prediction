@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, AlertCircle, Loader2 } from 'lucide-react';
 import PriceChart from '../components/PriceChart';
+import config from '../config';
 
 interface Prediction {
   Date: string;
@@ -25,12 +26,12 @@ const Home = () => {
   useEffect(() => {
     const fetchPredictions = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/predictions');
+        const response = await fetch(`${config.apiUrl}/api/predictions`);
         const data: PredictionResponse = await response.json();
 
         if (data.success) {
           setPredictions(data.predictions);
-          setPlotUrl(`http://localhost:5000${data.plot_url}`);
+          setPlotUrl(`${config.apiUrl}${data.plot_url}`);
         } else {
           setError(data.message || 'Failed to fetch predictions');
         }

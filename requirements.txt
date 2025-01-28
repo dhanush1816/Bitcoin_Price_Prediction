@@ -17,3 +17,6 @@ pytz==2024.1
 # Other Dependencies
 pillow==10.4.0
 requests==2.32.3
+
+# Deployment
+gunicorn==21.2.0
