@@ -28,14 +28,6 @@ node_modules/
 *.swo
 .DS_Store
 
-# Project specific
-backend/src/logs/
-backend/src/static/
-backend/src/data/
-*.log
-*.csv
-*.h5
-*.pkl
 
 # Build files
 frontend/dist/
