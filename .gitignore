@@ -57,3 +57,13 @@ dist/
 build/
 .env.local
 .env.*.local
+
+# Keep directory structure but ignore contents
+backend/src/models/*
+!backend/src/models/.gitkeep
+backend/src/data/*
+!backend/src/data/.gitkeep
+backend/src/static/*
+!backend/src/static/.gitkeep
+backend/src/logs/*
+!backend/src/logs/.gitkeep

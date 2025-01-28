@@ -2,21 +2,35 @@ services:
   - type: web
     name: btc-predictor-backend
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn backend.src.app:app
+    buildCommand: |
+      pip install -r requirements.txt
+      mkdir -p /opt/render/project/src/models
+      mkdir -p /opt/render/project/src/data
+      mkdir -p /opt/render/project/src/static
+      mkdir -p /opt/render/project/src/logs
+    startCommand: gunicorn --bind 0.0.0.0:$PORT backend.src.app:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.0
-      - key: PORT
-        value: 10000
+      - key: FLASK_ENV
+        value: production
+      - key: RENDER
+        value: "true"
+    disk:
+      name: data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1
 
   - type: web
     name: btc-predictor-frontend
     env: node
-    buildCommand: cd frontend && npm install && npm run build
+    buildCommand: |
+      cd frontend
+      npm install
+      npm run build
     startCommand: cd frontend && npm run preview
     envVars:
       - key: NODE_VERSION
         value: 18.0.0
-      - key: PORT
-        value: 10001 
+      - key: VITE_API_URL
+        value: https://btc-predictor-backend.onrender.com 

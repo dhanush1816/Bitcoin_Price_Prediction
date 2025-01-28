@@ -15,16 +15,26 @@ from flask_cors import CORS
 from pathlib import Path
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app, resources={r"/api/*": {"origins": [
+    "http://localhost:5173",
+    "http://localhost:10001",
+    "https://btc-predictor-frontend.onrender.com"
+]}})
 
 class BTCPredictionPipeline:
     def __init__(self):
         """Initialize the prediction pipeline with model paths and parameters"""
-        self.base_dir = Path(__file__).parent
-        self.models_dir = self.base_dir / 'models'
-        self.data_dir = self.base_dir / 'data'
-        self.static_dir = self.base_dir / 'static'
-        self.logs_dir = self.base_dir / 'logs'
+        # Use Render.com's persistent disk
+        if os.environ.get('RENDER'):
+            base_path = Path('/opt/render/project/src')
+        else:
+            base_path = Path(__file__).parent
+
+        self.base_dir = base_path
+        self.models_dir = base_path / 'models'
+        self.data_dir = base_path / 'data'
+        self.static_dir = base_path / 'static'
+        self.logs_dir = base_path / 'logs'
 
         # Create directories
         for dir_path in [self.models_dir, self.data_dir, self.static_dir, self.logs_dir]:
@@ -47,17 +57,27 @@ class BTCPredictionPipeline:
             ]
         )
         
-        # Load models and scaler
+        # Initialize models
         try:
             self.rf_model = joblib.load(self.rf_model_path)
-            self.scaler = joblib.load(self.scaler_path)
-            logging.info("Models and scaler loaded successfully")
-        except Exception as e:
-            logging.error(f"Error loading models: {str(e)}")
-            raise
+            logging.info("Models loaded successfully")
+        except FileNotFoundError:
+            logging.warning("Models not found, initializing new ones")
+            self.rf_model = self._initialize_models()
             
         # Load existing data if available
         self.load_historical_data()
+
+    def _initialize_models(self):
+        """Initialize new models if not found"""
+        rf_model = RandomForestRegressor(
+            n_estimators=100,
+            max_depth=10,
+            random_state=42
+        )
+        # Save the initialized models
+        joblib.dump(rf_model, self.rf_model_path)
+        return rf_model
 
     def load_historical_data(self):
         """
